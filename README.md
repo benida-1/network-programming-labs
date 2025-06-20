@@ -38,12 +38,28 @@ This repository contains the completed lab exercises and final project for the *
 
 ---
 
-## 📡 Final Project – Real-Time Temperature Monitoring System (UDP-Based)
+## 🛰 Final Project – Real-Time Temperature Monitoring System (UDP-Based)
 
-### 🧩 Description:
-- Simulates 3 temperature sensor clients sending periodic temperature data via UDP to a central server.
-- Server logs data and optionally broadcasts to other clients for real-time updates.
-- Demonstrates real-world IoT concepts: fast, stateless, multi-client UDP communication.
+This project is implemented in two parts:
+### 🧩 Part A – C-Based UDP Simulation
+  -Built a UDP server-client system in C.
+  -imulated clients (C1, C2, C3) send temperature readings every 3 seconds.
+  -Server logs data in CSV format and prints live updates.
+  -Python script used to visualize trends from the log.
+
+⮞ Format: timestamp,client_ip,client_port,client_id,location,temperature
+### 🧩 Part B – Web-Based Monitoring with ESP32 + Node.js
+  - ESP32s with DHT sensors send real-time data via UDP to a Node.js server.
+  - Server:
+    - Receives data, logs to CSV, and sends to browser via WebSocket.
+    - Provides CSV download and purges logs older than 24 hours.
+  - Frontend (HTML + Chart.js):
+
+        Displays live chart per sensor.
+
+        Shows icons (🔥/❄️) and flashes alert on high/low readings.
+
+        Mobile-friendly and supports multiple devices.
 
 ---
 
@@ -52,3 +68,9 @@ This repository contains the completed lab exercises and final project for the *
 ### 🔨 Compile C Files
 ```bash
 gcc filename.c -o program
+```
+###▶️ Run
+```bash
+./program
+```
+

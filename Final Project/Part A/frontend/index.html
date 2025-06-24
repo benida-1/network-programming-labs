@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Real-Time Temperature Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #e0f7fa;
+      margin: 0;
+    }
+
+    h2 {
+      text-align: center;
+      color: #00796b;
+    }
+
+    canvas {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .alert {
+      margin: 20px auto;
+      max-width: 600px;
+      padding: 12px;
+      font-size: 18px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      text-align: center;
+      transition: background 0.4s ease;
+    }
+
+    .alert.flash {
+      background-color: #ff5252;
+      color: white;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 15px;
+      font-size: 16px;
+      background-color: #00796b;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #004d40;
+    }
+
+    @media (max-width: 600px) {
+      .alert {
+        font-size: 16px;
+        padding: 10px;
+      }
+      canvas {
+        width: 100% !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>🌡️ Real-Time Temperature Chart</h2>
+  <canvas id="tempChart" width="800" height="400"></canvas>
+
+  <div class="alert" id="latestReading">Waiting for data...</div>
+
+  <button onclick="downloadCSV()">⬇️ Download CSV</button>
+
+  <script>
+    const ws = new WebSocket(`ws://${location.host}`);
+    const ctx = document.getElementById('tempChart').getContext('2d');
+    const colors = { 'Sensor-1': 'red', 'Sensor-2': 'blue' };
+    const chartData = { labels: [], datasets: [] };
+    const chartMap = {};
+    const alertBox = document.getElementById('latestReading');
+
+    const tempChart = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        responsive: true,
+        scales: {
+          x: { title: { display: true, text: 'Time' }},
+          y: { title: { display: true, text: 'Temperature (°C)' }}
+        }
+      }
+    });
+
+    function getTempIcon(temp) {
+      if (temp >= 30) return "🔥";
+      if (temp <= 15) return "❄️";
+      return "🌡️";
+    }
+
+    ws.onmessage = ({ data }) => {
+      const [sensorId, tempStr, unit] = data.split('|');
+      const temp = parseFloat(tempStr);
+      const time = new Date().toLocaleTimeString();
+
+      // Update chart
+      if (!chartMap[sensorId]) {
+        const color = colors[sensorId] || 'green';
+        const dataset = {
+          label: sensorId,
+          data: [],
+          borderColor: color,
+          borderWidth: 2,
+          fill: false,
+          spanGaps: true
+        };
+        chartMap[sensorId] = dataset;
+        chartData.datasets.push(dataset);
+      }
+
+      if (chartData.labels.length > 20) chartData.labels.shift();
+      chartData.labels.push(time);
+
+      chartData.datasets.forEach(ds => {
+        if (ds.label === sensorId) {
+          if (ds.data.length > 20) ds.data.shift();
+          ds.data.push(temp);
+        } else {
+          if (ds.data.length > 20) ds.data.shift();
+          if (ds.data.length < chartData.labels.length) ds.data.push(null);
+        }
+      });
+
+      tempChart.update();
+
+      // Show latest reading with icon
+      const icon = getTempIcon(temp);
+      alertBox.textContent = `${icon} ${sensorId} reports ${temp}°C at ${time}`;
+
+      // Flash red if over threshold
+      if (temp >= 30 || temp <= 15) {
+        alertBox.classList.add('flash');
+        setTimeout(() => alertBox.classList.remove('flash'), 1000);
+      }
+    };
+
+    function downloadCSV() {
+      window.open('/download-csv', '_blank');
+    }
+  </script>
+</body>
+</html>
